@@ -5,7 +5,7 @@
 - 镜像：hpc101-lab35:latest
 - CANN 版本：8.5.0
 - 硬件：Ascend 910B4
-- 代码 commit：4a0d1e9d1d8942fd09b9288d0efdec69f3968c0a
+- 代码 commit：a51517f
 
 ## 实验目的
 
