@@ -67,11 +67,15 @@ public:
 
         // Whole-row path: pack several rows into one UB tile. Chunked path:
         // cap one chunk at 4096 FP32 elements as before.
+        int32_t totalRows = this->batchSize;
+        int32_t blockNum = static_cast<int32_t>(AscendC::GetBlockNum());
+        int32_t rowsPerBlock = (totalRows + blockNum - 1) / blockNum;
         if (this->alignedHidden <= ROW_TILE_MAX_ELEMS) {
             int32_t maxRows = ROW_TILE_MAX_ELEMS / this->alignedHidden;
             if (this->alignedHidden / 8 > MAX_REPEAT_STRIDE) maxRows = 1;
             if (maxRows > MAX_ROWS_PER_TILE) maxRows = MAX_ROWS_PER_TILE;
             if (maxRows < 1) maxRows = 1;
+            if (maxRows > rowsPerBlock) maxRows = rowsPerBlock;
             this->rowTile = maxRows;
             this->tileElems = this->rowTile * this->alignedHidden;
         } else {
@@ -81,9 +85,6 @@ public:
         }
 
         // Row-parallel split: contiguous range of rows per core.
-        int32_t totalRows = this->batchSize;
-        int32_t blockNum = static_cast<int32_t>(AscendC::GetBlockNum());
-        int32_t rowsPerBlock = (totalRows + blockNum - 1) / blockNum;
         this->startRow = static_cast<int64_t>(this->blockIdx) * rowsPerBlock;
         this->endRow = this->startRow + rowsPerBlock;
         if (this->endRow > totalRows) this->endRow = totalRows;
