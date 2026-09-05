@@ -31,7 +31,7 @@
 #include "kernel_operator.h"
 
 namespace {
-constexpr int32_t BUFFER_NUM = 1;          // one row-group tile per AIV
+constexpr int32_t BUFFER_NUM = 2;          // two row-group tiles per AIV
 constexpr int32_t OUT_BUFFER_NUM = 1;      // outputs are produced once per row group
 // 32B / sizeof(half) == 16: the UB / DataCopy / vector-op alignment unit.
 constexpr int32_t ALIGN_NUM = 16;
@@ -76,6 +76,10 @@ public:
             if (maxRows > MAX_ROWS_PER_TILE) maxRows = MAX_ROWS_PER_TILE;
             if (maxRows < 1) maxRows = 1;
             if (maxRows > rowsPerBlock) maxRows = rowsPerBlock;
+            // H=4096 with two input rows already uses almost the entire UB
+            // budget before the second VECIN buffer is added. Keep that edge
+            // case single-row so double buffering remains within capacity.
+            if (BUFFER_NUM > 1 && this->alignedHidden == CHUNK_TILE_ELEMS) maxRows = 1;
             this->rowTile = maxRows;
             this->tileElems = this->rowTile * this->alignedHidden;
         } else {
